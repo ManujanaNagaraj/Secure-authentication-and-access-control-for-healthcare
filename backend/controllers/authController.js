@@ -183,14 +183,27 @@ export const login = async (req, res) => {
 // @access  Private
 export const getProfile = async (req, res) => {
   try {
+    console.log('[getProfile] Fetching profile for userId:', req.user?.userId);
+    
+    if (!req.user || !req.user.userId) {
+      console.log('[getProfile] ERROR: req.user not set');
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
+
     const user = await User.findById(req.user.userId);
 
     if (!user) {
+      console.log('[getProfile] ERROR: User not found in database');
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
+
+    console.log('[getProfile] Profile fetched successfully for:', user.name);
 
     res.status(200).json({
       success: true,
@@ -203,7 +216,7 @@ export const getProfile = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get profile error:', error);
+    console.error('[getProfile] ERROR:', error);
     res.status(500).json({
       success: false,
       message: 'Server error retrieving profile',

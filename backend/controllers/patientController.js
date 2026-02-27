@@ -6,9 +6,14 @@ import Appointment from '../models/Appointment.js';
 // @access  Private (Patient only)
 export const getMyRecords = async (req, res) => {
   try {
+    console.log('[getMyRecords] Fetching records for patient:', req.user.userId);
+    console.log('[getMyRecords] User info:', req.user);
+    
     const records = await MedicalRecord.find({ patientId: req.user.userId })
       .populate('doctorId', 'name email')
       .sort({ createdAt: -1 });
+
+    console.log('[getMyRecords] Found', records.length, 'records');
 
     res.status(200).json({
       success: true,
@@ -16,7 +21,7 @@ export const getMyRecords = async (req, res) => {
       data: records
     });
   } catch (error) {
-    console.error('Error fetching medical records:', error);
+    console.error('[getMyRecords] ERROR:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching medical records',
@@ -30,9 +35,13 @@ export const getMyRecords = async (req, res) => {
 // @access  Private (Patient only)
 export const getMyAppointments = async (req, res) => {
   try {
+    console.log('[getMyAppointments] Fetching appointments for patient:', req.user.userId);
+    
     const appointments = await Appointment.find({ patientId: req.user.userId })
       .populate('doctorId', 'name email')
       .sort({ date: 1 });
+
+    console.log('[getMyAppointments] Found', appointments.length, 'appointments');
 
     res.status(200).json({
       success: true,
@@ -40,7 +49,7 @@ export const getMyAppointments = async (req, res) => {
       data: appointments
     });
   } catch (error) {
-    console.error('Error fetching appointments:', error);
+    console.error('[getMyAppointments] ERROR:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching appointments',

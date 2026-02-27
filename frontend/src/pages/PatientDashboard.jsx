@@ -18,25 +18,59 @@ const PatientDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
+      
+      if (!token) {
+        console.error('No token found in localStorage');
+        setError('No authentication token found. Please login again.');
+        navigate('/login');
+        return;
+      }
+
+      console.log('Token found, fetching dashboard data...');
+      
       const config = {
         headers: { Authorization: `Bearer ${token}` }
       };
 
       // Fetch user profile
+      console.log('Fetching user profile...');
       const userRes = await axios.get('http://localhost:5000/api/auth/profile', config);
+      console.log('User profile fetched:', userRes.data);
       setUser(userRes.data.user);
 
       // Fetch medical records
+      console.log('Fetching medical records...');
       const recordsRes = await axios.get('http://localhost:5000/api/patients/my-records', config);
+      console.log('Medical records fetched:', recordsRes.data);
       setMedicalRecords(recordsRes.data.data || []);
 
       // Fetch appointments
+      console.log('Fetching appointments...');
       const appointmentsRes = await axios.get('http://localhost:5000/api/patients/my-appointments', config);
+      console.log('Appointments fetched:', appointmentsRes.data);
       setAppointments(appointmentsRes.data.data || []);
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      setError('Failed to load dashboard data');
+      
+      if (error.response) {
+        // Server responded with error
+        console.error('Server error response:', error.response.data);
+        setError(`Failed to load dashboard data: ${error.response.data.message || error.response.statusText}`);
+        
+        if (error.response.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/login');
+        }
+      } else if (error.request) {
+        // Request made but no response
+        console.error('No response received:', error.request);
+        setError('Cannot connect to server. Please check if the backend is running.');
+      } else {
+        // Error in request setup
+        console.error('Request setup error:', error.message);
+        setError(`Error: ${error.message}`);
+      }
     } finally {
       setLoading(false);
     }

@@ -39,11 +39,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 app.use('/api', limiter);
 
-// Audit logging middleware - logs all API requests
-app.use(auditLogger);
+// Audit logging middleware - logs all API requests (runs before auth)
+app.use('/api', auditLogger);
 
-// Anomaly detection middleware - runs after authentication
-app.use(anomalyDetector);
+// Anomaly detection middleware - runs before routes
+app.use('/api', anomalyDetector);
 
 // Routes
 app.use('/api/auth', authRoutes);
