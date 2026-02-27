@@ -24,6 +24,13 @@ This project implements a comprehensive security system for healthcare applicati
 - **Doctor Role**: Access to patient records, appointment management, and prescription creation
 - **Admin Role**: Full system access including user management, security logs, and system settings
 
+### AI-Powered Features
+- **HealthBot AI Assistant**: Intelligent chatbot for patients using Google Gemini API
+  - Answers health-related questions
+  - Provides information about patient's medical records and appointments
+  - Offers general healthcare advice
+  - Context-aware responses based on patient's medical history
+
 ### Security Features
 - JWT token verification middleware
 - Role-based authorization middleware
@@ -31,6 +38,8 @@ This project implements a comprehensive security system for healthcare applicati
 - CORS configuration
 - MongoDB connection security
 - Password validation and hashing
+- Comprehensive audit logging
+- AI-powered anomaly detection
 
 ## 📁 Project Structure
 
@@ -87,6 +96,7 @@ VIT/
 - **express-rate-limit** - Rate limiting
 - **CORS** - Cross-origin resource sharing
 - **Morgan** - HTTP request logger
+- **Google Generative AI** - Gemini API for AI chatbot
 
 ### Frontend
 - **React 18** - UI library
@@ -250,6 +260,17 @@ The build files will be in the `dist/` directory.
 - `PORT` - Server port (default: 5000)
 - `CLIENT_URL` - Frontend URL for CORS
 - `NODE_ENV` - Environment (development/production)
+- `GEMINI_API_KEY` - Google Gemini API key for AI chatbot
+
+### Getting Your Gemini API Key
+
+1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Sign in with your Google account
+3. Click "Create API Key"
+4. Copy the generated API key
+5. Add it to your `.env` file: `GEMINI_API_KEY=your_api_key_here`
+
+**Note**: The Gemini API has a generous free tier that's perfect for development and testing.
 
 ## 🤝 Contributing
 

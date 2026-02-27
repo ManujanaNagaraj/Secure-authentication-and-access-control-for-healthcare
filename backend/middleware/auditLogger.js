@@ -11,6 +11,9 @@ const getActionFromRequest = (method, path) => {
   if (path.includes('/patients/my-records')) return 'VIEW_RECORD';
   if (path.includes('/patients/my-appointments')) return 'VIEW_APPOINTMENTS';
   
+  // Chat actions
+  if (path.includes('/chat')) return 'CHAT_AI';
+  
   // Doctor actions
   if (path.includes('/doctor/my-patients')) return 'VIEW_PATIENTS';
   if (path.includes('/doctor/add-record')) return 'ADD_RECORD';

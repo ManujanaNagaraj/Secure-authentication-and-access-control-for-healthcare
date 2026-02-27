@@ -4,6 +4,7 @@ import Register from './pages/Register';
 import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import ChatBot from './pages/ChatBot';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -22,6 +23,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['patient']}>
                 <PatientDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/patient/chat"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <ChatBot />
               </ProtectedRoute>
             }
           />

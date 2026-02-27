@@ -13,6 +13,7 @@ const Sidebar = ({ role, userName }) => {
   const menuItems = {
     patient: [
       { name: 'Dashboard', icon: '📊', path: '/dashboard/patient' },
+      { name: 'Chat with HealthBot', icon: '🤖', path: '/dashboard/patient/chat' },
       { name: 'Medical Records', icon: '📋', active: true },
       { name: 'Appointments', icon: '📅', active: true },
       { name: 'Profile', icon: '👤', active: true },
@@ -58,6 +59,7 @@ const Sidebar = ({ role, userName }) => {
           {menuItems[role]?.map((item, index) => (
             <li key={index}>
               <button
+                onClick={() => item.path && navigate(item.path)}
                 className="w-full text-left px-4 py-3 rounded-lg hover:bg-primary-600 transition-colors flex items-center space-x-3"
               >
                 <span className="text-xl">{item.icon}</span>
