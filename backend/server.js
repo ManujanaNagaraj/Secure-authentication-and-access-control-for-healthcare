@@ -8,6 +8,8 @@ import authRoutes from './routes/authRoutes.js';
 import patientRoutes from './routes/patientRoutes.js';
 import doctorRoutes from './routes/doctorRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import { auditLogger } from './middleware/auditLogger.js';
+import { anomalyDetector } from './middleware/anomalyDetector.js';
 
 // Load environment variables
 dotenv.config();
@@ -36,6 +38,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 app.use('/api', limiter);
+
+// Audit logging middleware - logs all API requests
+app.use(auditLogger);
+
+// Anomaly detection middleware - runs after authentication
+app.use(anomalyDetector);
 
 // Routes
 app.use('/api/auth', authRoutes);

@@ -4,7 +4,9 @@ import {
   updateUserRole,
   deleteUser,
   getSystemStats,
-  getSecurityAlerts
+  getSecurityAlerts,
+  getAuditLogs,
+  resolveAlert
 } from '../controllers/adminController.js';
 import { verifyToken } from '../middleware/verifyToken.js';
 import { authorizeRole } from '../middleware/authorizeRole.js';
@@ -21,5 +23,7 @@ router.put('/users/:id/role', updateUserRole);
 router.delete('/users/:id', deleteUser);
 router.get('/stats', getSystemStats);
 router.get('/security-alerts', getSecurityAlerts);
+router.get('/audit-logs', getAuditLogs);
+router.delete('/alerts/:id', resolveAlert);
 
 export default router;

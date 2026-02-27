@@ -1,6 +1,8 @@
 import User from '../models/User.js';
 import MedicalRecord from '../models/MedicalRecord.js';
 import Appointment from '../models/Appointment.js';
+import AuditLog from '../models/AuditLog.js';
+import { createAuditLog } from '../middleware/auditLogger.js';
 
 // @desc    Get all users
 // @route   GET /api/admin/users
@@ -187,28 +189,111 @@ export const getSystemStats = async (req, res) => {
 // @access  Private (Admin only)
 export const getSecurityAlerts = async (req, res) => {
   try {
-    // Placeholder for security alerts
-    // In a real system, this would check logs, failed login attempts, etc.
-    const alerts = [
-      {
-        id: 1,
-        type: 'info',
-        message: 'System is operating normally',
-        timestamp: new Date(),
-        severity: 'low'
-      }
-    ];
+    // Get all flagged audit logs that are not resolved
+    const alerts = await AuditLog.find({ 
+      flagged: true 
+    })
+      .populate('userId', 'name email')
+      .sort({ timestamp: -1 })
+      .limit(100);
+
+    const formattedAlerts = alerts.map(alert => ({
+      id: alert._id,
+      type: alert.resolved ? 'resolved' : 'warning',
+      userId: alert.userId?._id,
+      userName: alert.userName || alert.userId?.name || 'Unknown',
+      userEmail: alert.userId?.email,
+      role: alert.role,
+      action: alert.action,
+      endpoint: alert.endpoint,
+      ipAddress: alert.ipAddress,
+      message: alert.flagReason,
+      timestamp: alert.timestamp,
+      severity: alert.flagReason.includes('Brute force') ? 'high' : 
+                alert.flagReason.includes('rapid') ? 'high' : 'medium',
+      flagged: alert.flagged,
+      resolved: alert.resolved
+    }));
 
     res.status(200).json({
       success: true,
-      count: alerts.length,
-      data: alerts
+      count: formattedAlerts.length,
+      data: formattedAlerts
     });
   } catch (error) {
     console.error('Error fetching security alerts:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching security alerts',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get all audit logs
+// @route   GET /api/admin/audit-logs
+// @access  Private (Admin only)
+export const getAuditLogs = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const total = await AuditLog.countDocuments();
+    const logs = await AuditLog.find()
+      .populate('userId', 'name email')
+      .sort({ timestamp: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      success: true,
+      count: logs.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      data: logs
+    });
+  } catch (error) {
+    console.error('Error fetching audit logs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching audit logs',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Mark alert as resolved
+// @route   DELETE /api/admin/alerts/:id
+// @access  Private (Admin only)
+export const resolveAlert = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const alert = await AuditLog.findByIdAndUpdate(
+      id,
+      { resolved: true },
+      { new: true }
+    );
+
+    if (!alert) {
+      return res.status(404).json({
+        success: false,
+        message: 'Alert not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Alert marked as resolved',
+      data: alert
+    });
+  } catch (error) {
+    console.error('Error resolving alert:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error resolving alert',
       error: error.message
     });
   }

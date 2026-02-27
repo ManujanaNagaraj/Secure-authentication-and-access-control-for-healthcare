@@ -1,5 +1,17 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import AuditLog from '../models/AuditLog.js';
+import { checkBruteForceLogin } from '../middleware/anomalyDetector.js';
+
+// Get client IP
+const getClientIp = (req) => {
+  return req.ip || 
+         req.headers['x-forwarded-for']?.split(',')[0] || 
+         req.headers['x-real-ip'] || 
+         req.connection?.remoteAddress || 
+         req.socket?.remoteAddress ||
+         'Unknown';
+};
 
 // Generate JWT Token
 const generateToken = (userId, role) => {
@@ -72,6 +84,7 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const ipAddress = getClientIp(req);
 
     // Validate input
     if (!email || !password) {
@@ -85,6 +98,20 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email }).select('+password');
 
     if (!user) {
+      // Log failed login attempt
+      await AuditLog.create({
+        userName: email,
+        role: 'unknown',
+        action: 'FAILED_LOGIN',
+        endpoint: 'POST /api/auth/login',
+        ipAddress,
+        timestamp: new Date(),
+        metadata: { reason: 'User not found' }
+      });
+
+      // Check for brute force
+      await checkBruteForceLogin(ipAddress);
+
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
@@ -95,6 +122,21 @@ export const login = async (req, res) => {
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
+      // Log failed login attempt
+      await AuditLog.create({
+        userId: user._id,
+        userName: user.name,
+        role: user.role,
+        action: 'FAILED_LOGIN',
+        endpoint: 'POST /api/auth/login',
+        ipAddress,
+        timestamp: new Date(),
+        metadata: { reason: 'Invalid password' }
+      });
+
+      // Check for brute force
+      await checkBruteForceLogin(ipAddress);
+
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
@@ -103,6 +145,17 @@ export const login = async (req, res) => {
 
     // Generate token
     const token = generateToken(user._id, user.role);
+
+    // Log successful login
+    await AuditLog.create({
+      userId: user._id,
+      userName: user.name,
+      role: user.role,
+      action: 'LOGIN',
+      endpoint: 'POST /api/auth/login',
+      ipAddress,
+      timestamp: new Date()
+    });
 
     res.status(200).json({
       success: true,

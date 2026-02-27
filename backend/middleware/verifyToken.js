@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
-export const verifyToken = (req, res, next) => {
+export const verifyToken = async (req, res, next) => {
   try {
     // Get token from Authorization header
     const authHeader = req.headers.authorization;
@@ -18,10 +19,15 @@ export const verifyToken = (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+    // Get user details for audit logging
+    const user = await User.findById(decoded.userId).select('name email role');
+
     // Attach user info to request object
     req.user = {
       userId: decoded.userId,
-      role: decoded.role
+      role: decoded.role,
+      userName: user?.name || 'Unknown',
+      userEmail: user?.email
     };
 
     next();
