@@ -3,9 +3,6 @@ import MedicalRecord from '../models/MedicalRecord.js';
 import Appointment from '../models/Appointment.js';
 import User from '../models/User.js';
 
-// Initialize Gemini API
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
 // @desc    Chat with AI healthcare assistant
 // @route   POST /api/chat
 // @access  Private (Patient only)
@@ -15,6 +12,7 @@ export const chatWithBot = async (req, res) => {
 
     console.log('[chatWithBot] Patient:', req.user.userName, 'UserId:', req.user.userId);
     console.log('[chatWithBot] Message:', message);
+    console.log('[chatWithBot] Gemini API Key exists:', !!process.env.GEMINI_API_KEY);
 
     // Validate input
     if (!message || message.trim() === '') {
@@ -28,9 +26,12 @@ export const chatWithBot = async (req, res) => {
     if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'your_gemini_api_key_here') {
       return res.status(500).json({
         success: false,
-        message: 'AI chatbot is not configured. Please add your Gemini API key to the .env file.'
+        message: 'Invalid or missing Gemini API key. Please check your configuration.'
       });
     }
+
+    // Initialize Gemini API (lazily to ensure env vars are loaded)
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
     // Fetch patient details
     const patient = await User.findById(req.user.userId);
@@ -105,8 +106,8 @@ Please provide a helpful, caring response:`;
 
     console.log('[chatWithBot] Sending request to Gemini API...');
 
-    // Get Gemini model
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // Get Gemini model - using gemini-2.5-flash (latest stable model)
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     // Generate response
     const result = await model.generateContent(systemPrompt);

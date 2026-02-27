@@ -40,12 +40,7 @@ const getClientIp = (req) => {
 export const auditLogger = async (req, res, next) => {
   try {
     // Skip logging for health check and static files
-    if (req.path === '/api/health' || req.path.includes('/assets/')) {
-      return next();
-    }
-
-    // Only log API requests
-    if (!req.path.startsWith('/api/')) {
+    if (req.path === '/health' || req.path.includes('/assets/')) {
       return next();
     }
 

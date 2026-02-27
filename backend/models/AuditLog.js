@@ -31,6 +31,7 @@ const auditLogSchema = new mongoose.Schema({
       'VIEW_USERS',
       'VIEW_PROFILE',
       'REGISTER',
+      'CHAT_AI',
       'OTHER'
     ]
   },
