@@ -1,110 +1,204 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authAPI } from '../services/api';
+import axios from 'axios';
+import Sidebar from '../components/Sidebar';
 
 const PatientDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [medicalRecords, setMedicalRecords] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchUserProfile();
+    fetchDashboardData();
   }, []);
 
-  const fetchUserProfile = async () => {
+  const fetchDashboardData = async () => {
     try {
-      const response = await authAPI.getProfile();
-      if (response.data.success) {
-        setUser(response.data.user);
-      }
+      const token = localStorage.getItem('token');
+      const config = {
+        headers: { Authorization: `Bearer ${token}` }
+      };
+
+      // Fetch user profile
+      const userRes = await axios.get('http://localhost:5000/api/auth/profile', config);
+      setUser(userRes.data.user);
+
+      // Fetch medical records
+      const recordsRes = await axios.get('http://localhost:5000/api/patients/my-records', config);
+      setMedicalRecords(recordsRes.data.data || []);
+
+      // Fetch appointments
+      const appointmentsRes = await axios.get('http://localhost:5000/api/patients/my-appointments', config);
+      setAppointments(appointmentsRes.data.data || []);
+
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Error fetching dashboard data:', error);
+      setError('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('user');
-    navigate('/login');
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const formatTime = (timeString) => {
+    return timeString;
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-xl text-gray-600">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Patient Dashboard</h1>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-          >
-            Logout
-          </button>
-        </div>
-      </header>
-
+    <div className="flex min-h-screen bg-gray-100">
+      <Sidebar role="patient" userName={user?.name || 'Patient'} />
+      
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Card */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-2">Welcome, {user?.name}!</h2>
-          <p className="text-gray-600">Email: {user?.email}</p>
-          <p className="text-gray-600">Role: {user?.role}</p>
-          <p className="text-gray-500 text-sm mt-2">
-            Member since: {new Date(user?.createdAt).toLocaleDateString()}
-          </p>
+      <div className="ml-64 flex-1 p-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Welcome, {user?.name}!</h1>
+          <p className="text-gray-600 mt-2">Here's your healthcare dashboard</p>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-2 text-blue-600">Medical Records</h3>
-            <p className="text-gray-600 mb-4">View your medical history and records</p>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-              View Records
-            </button>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            {error}
           </div>
+        )}
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-2 text-green-600">Appointments</h3>
-            <p className="text-gray-600 mb-4">Schedule or view your appointments</p>
-            <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
-              View Appointments
-            </button>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-2 text-purple-600">Prescriptions</h3>
-            <p className="text-gray-600 mb-4">Access your prescriptions</p>
-            <button className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">
-              View Prescriptions
-            </button>
+        {/* Profile Card */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary-700">👤 Profile Information</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="text-sm text-gray-600">Full Name</p>
+              <p className="font-medium text-gray-900">{user?.name}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Email</p>
+              <p className="font-medium text-gray-900">{user?.email}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Role</p>
+              <p className="font-medium text-gray-900 capitalize">{user?.role}</p>
+            </div>
           </div>
         </div>
 
-        {/* Info Box */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">
-            Patient Access Level
-          </h3>
-          <p className="text-blue-800">
-            As a patient, you have access to your personal medical records, appointments,
-            and prescriptions. You can also communicate with your healthcare providers
-            securely through this platform.
-          </p>
+        {/* Medical Records Section */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary-700">📋 My Medical Records</h2>
+          {medicalRecords.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No medical records found</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Diagnosis
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Doctor Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Prescription
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {medicalRecords.map((record) => (
+                    <tr key={record._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatDate(record.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {record.diagnosis}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {record.doctorId?.name || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {record.prescription}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      </main>
+
+        {/* Appointments Section */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4 text-primary-700">📅 My Appointments</h2>
+          {appointments.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No appointments scheduled</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Doctor Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Time
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {appointments.map((appointment) => (
+                    <tr key={appointment._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {appointment.doctorId?.name || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatDate(appointment.date)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatTime(appointment.time)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          appointment.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
+                          appointment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {appointment.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
