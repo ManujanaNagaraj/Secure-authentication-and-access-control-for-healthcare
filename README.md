@@ -138,6 +138,16 @@ NODE_ENV=development
 npm start
 ```
 
+5. (Optional) Create admin user:
+```bash
+npm run create-admin
+```
+
+This will create an admin user with:
+- Email: admin@health.com
+- Password: Admin@123
+- Role: admin
+
 The backend will run on `http://localhost:5000`
 
 ### Frontend Setup
