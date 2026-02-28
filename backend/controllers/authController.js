@@ -29,6 +29,15 @@ export const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
+    // Check MongoDB connection
+    const mongoose = await import('mongoose');
+    if (mongoose.default.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: 'Database connection unavailable. Please check MongoDB connection.'
+      });
+    }
+
     // Validate input
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -36,6 +45,10 @@ export const register = async (req, res) => {
         message: 'Please provide name, email, and password'
       });
     }
+
+    // Validate role if provided
+    const validRoles = ['patient', 'doctor', 'admin'];
+    const userRole = role && validRoles.includes(role.toLowerCase()) ? role.toLowerCase() : 'patient';
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -51,7 +64,7 @@ export const register = async (req, res) => {
       name,
       email,
       password,
-      role: role || 'patient'
+      role: userRole
     });
 
     // Generate token
@@ -85,6 +98,15 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const ipAddress = getClientIp(req);
+
+    // Check MongoDB connection
+    const mongoose = await import('mongoose');
+    if (mongoose.default.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: 'Database connection unavailable. Please check MongoDB connection.'
+      });
+    }
 
     // Validate input
     if (!email || !password) {
