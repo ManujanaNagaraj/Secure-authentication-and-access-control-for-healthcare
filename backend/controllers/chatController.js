@@ -37,23 +37,30 @@ export const chatWithBot = async (req, res) => {
 
     // Build role-specific system prompt
     if (userRole === 'doctor') {
-      // Fetch doctor's patient records
-      const patientRecords = await PatientRecord.find({ doctorId: req.user.userId })
-        .select('patientName patientAge diagnosis prescription notes roomNumber status')
+      // Get doctor's specialization
+      const doctor = await User.findById(req.user.userId).select('name specialization');
+      
+      // Fetch patient records in doctor's department
+      const patientRecords = await PatientRecord.find({ 
+        department: doctor.specialization 
+      })
+        .select('patientName patientAge diagnosis prescription notes roomNumber status assignedDoctorName department')
         .limit(20);
 
-      let recordsContext = 'No patients assigned yet.';
+      let recordsContext = 'No patients in your department yet.';
       if (patientRecords.length > 0) {
         recordsContext = patientRecords.map((record, index) => {
           return `Patient ${index + 1}: ${record.patientName} (Age: ${record.patientAge})
 - Room: ${record.roomNumber}
+- Department: ${record.department}
+- Assigned Doctor: ${record.assignedDoctorName}
 - Diagnosis: ${record.diagnosis}
 - Prescription: ${record.prescription}
 - Status: ${record.status}`;
         }).join('\n\n');
       }
 
-      systemPrompt = `You are DocBot, an AI assistant for doctors. You have access to all patient records assigned to this doctor:
+      systemPrompt = `You are DocBot, an AI assistant for ${doctor.specialization} specialists. You have access to all patient records in your department:
 
 ${recordsContext}
 
@@ -182,7 +189,7 @@ Provide a comprehensive, data-driven response:`;
     console.log('[chatWithBot] Sending request to Gemini API...');
 
     // Get Gemini model
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
     // Generate response
     const result = await model.generateContent(systemPrompt);
