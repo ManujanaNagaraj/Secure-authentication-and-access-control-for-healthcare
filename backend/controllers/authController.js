@@ -47,8 +47,8 @@ export const register = async (req, res) => {
     }
 
     // Validate role if provided
-    const validRoles = ['patient', 'doctor', 'admin'];
-    const userRole = role && validRoles.includes(role.toLowerCase()) ? role.toLowerCase() : 'patient';
+    const validRoles = ['doctor', 'nurse', 'admin'];
+    const userRole = role && validRoles.includes(role.toLowerCase()) ? role.toLowerCase() : 'doctor';
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });

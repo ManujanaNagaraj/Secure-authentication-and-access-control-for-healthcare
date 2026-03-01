@@ -5,9 +5,9 @@ import { authorizeRole } from '../middleware/authorizeRole.js';
 
 const router = express.Router();
 
-// All routes require authentication and patient role
+// All routes require authentication and one of the allowed roles
 router.use(verifyToken);
-router.use(authorizeRole('patient'));
+router.use(authorizeRole('doctor', 'nurse', 'admin'));
 
 // Chat routes
 router.post('/', chatWithBot);

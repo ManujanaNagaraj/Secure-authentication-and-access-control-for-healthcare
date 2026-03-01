@@ -2,6 +2,7 @@ import User from '../models/User.js';
 import MedicalRecord from '../models/MedicalRecord.js';
 import Appointment from '../models/Appointment.js';
 import AuditLog from '../models/AuditLog.js';
+import PatientRecord from '../models/PatientRecord.js';
 import { createAuditLog } from '../middleware/auditLogger.js';
 
 // @desc    Get all users
@@ -15,8 +16,8 @@ export const getAllUsers = async (req, res) => {
 
     // Get counts by role
     const totalUsers = users.length;
-    const totalPatients = users.filter(u => u.role === 'patient').length;
     const totalDoctors = users.filter(u => u.role === 'doctor').length;
+    const totalNurses = users.filter(u => u.role === 'nurse').length;
     const totalAdmins = users.filter(u => u.role === 'admin').length;
 
     res.status(200).json({
@@ -24,8 +25,8 @@ export const getAllUsers = async (req, res) => {
       count: totalUsers,
       stats: {
         totalUsers,
-        totalPatients,
         totalDoctors,
+        totalNurses,
         totalAdmins
       },
       data: users
@@ -48,10 +49,10 @@ export const updateUserRole = async (req, res) => {
     const { id } = req.params;
     const { role } = req.body;
 
-    if (!['patient', 'doctor', 'admin'].includes(role)) {
+    if (!['doctor', 'nurse', 'admin'].includes(role)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid role. Must be patient, doctor, or admin'
+        message: 'Invalid role. Must be doctor, nurse, or admin'
       });
     }
 
@@ -116,12 +117,10 @@ export const deleteUser = async (req, res) => {
     }
 
     // Also delete related records if needed
-    if (user.role === 'patient') {
-      await MedicalRecord.deleteMany({ patientId: id });
-      await Appointment.deleteMany({ patientId: id });
-    } else if (user.role === 'doctor') {
+    if (user.role === 'doctor') {
       await MedicalRecord.deleteMany({ doctorId: id });
       await Appointment.deleteMany({ doctorId: id });
+      await PatientRecord.updateMany({ doctorId: id }, { $unset: { doctorId: 1 } });
     }
 
     res.status(200).json({
@@ -144,33 +143,26 @@ export const deleteUser = async (req, res) => {
 export const getSystemStats = async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
-    const totalPatients = await User.countDocuments({ role: 'patient' });
     const totalDoctors = await User.countDocuments({ role: 'doctor' });
+    const totalNurses = await User.countDocuments({ role: 'nurse' });
     const totalAdmins = await User.countDocuments({ role: 'admin' });
-    const totalRecords = await MedicalRecord.countDocuments();
-    const totalAppointments = await Appointment.countDocuments();
-    
-    const scheduledAppointments = await Appointment.countDocuments({ status: 'scheduled' });
-    const completedAppointments = await Appointment.countDocuments({ status: 'completed' });
-    const cancelledAppointments = await Appointment.countDocuments({ status: 'cancelled' });
+    const totalPatientRecords = await PatientRecord.countDocuments();
+    const activePatients = await PatientRecord.countDocuments({ status: 'active' });
+    const dischargedPatients = await PatientRecord.countDocuments({ status: 'discharged' });
 
     res.status(200).json({
       success: true,
       data: {
         users: {
           total: totalUsers,
-          patients: totalPatients,
           doctors: totalDoctors,
+          nurses: totalNurses,
           admins: totalAdmins
         },
-        records: {
-          total: totalRecords
-        },
-        appointments: {
-          total: totalAppointments,
-          scheduled: scheduledAppointments,
-          completed: completedAppointments,
-          cancelled: cancelledAppointments
+        patientRecords: {
+          total: totalPatientRecords,
+          active: activePatients,
+          discharged: dischargedPatients
         }
       }
     });
@@ -294,6 +286,73 @@ export const resolveAlert = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error resolving alert',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get all patient records
+// @route   GET /api/admin/all-records
+// @access  Private (Admin only)
+export const getAllPatientRecords = async (req, res) => {
+  try {
+    const records = await PatientRecord.find()
+      .populate('doctorId', 'name')
+      .sort({ createdAt: -1 });
+
+    const formattedRecords = records.map(record => ({
+      _id: record._id,
+      patientName: record.patientName,
+      patientAge: record.patientAge,
+      roomNumber: record.roomNumber,
+      doctor: record.doctorId?.name || 'Unassigned',
+      diagnosis: record.diagnosis,
+      prescription: record.prescription,
+      notes: record.notes,
+      status: record.status,
+      date: record.createdAt
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: formattedRecords.length,
+      data: formattedRecords
+    });
+  } catch (error) {
+    console.error('Error fetching patient records:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching patient records',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get all system data for admin chat context
+// @route   GET /api/admin/system-data
+// @access  Private (Admin only)
+export const getSystemData = async (req, res) => {
+  try {
+    const users = await User.find().select('name email role createdAt');
+    const allRecords = await PatientRecord.find()
+      .populate('doctorId', 'name')
+      .select('patientName diagnosis prescription status createdAt');
+    const alerts = await AuditLog.find({ flagged: true, resolved: false })
+      .select('action userName role flagReason timestamp');
+
+    res.status(200).json({
+      success: true,
+      data: {
+        users,
+        allRecords,
+        alerts
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching system data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching system data',
       error: error.message
     });
   }

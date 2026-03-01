@@ -5,8 +5,8 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
-import patientRoutes from './routes/patientRoutes.js';
 import doctorRoutes from './routes/doctorRoutes.js';
+import nurseRoutes from './routes/nurseRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import { auditLogger } from './middleware/auditLogger.js';
@@ -48,8 +48,8 @@ app.use('/api', anomalyDetector);
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/patients', patientRoutes);
 app.use('/api/doctor', doctorRoutes);
+app.use('/api/nurse', nurseRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/chat', chatRoutes);
 

@@ -1,54 +1,37 @@
-import MedicalRecord from '../models/MedicalRecord.js';
-import Appointment from '../models/Appointment.js';
+import PatientRecord from '../models/PatientRecord.js';
 import User from '../models/User.js';
 
 // @desc    Get doctor's patients
-// @route   GET /api/doctor/my-patients
+// @route   GET /api/doctor/patients
 // @access  Private (Doctor only)
 export const getMyPatients = async (req, res) => {
   try {
-    // Find all unique patients who have records or appointments with this doctor
-    const recordPatients = await MedicalRecord.find({ doctorId: req.user.userId })
-      .distinct('patientId');
-    
-    const appointmentPatients = await Appointment.find({ doctorId: req.user.userId })
-      .distinct('patientId');
+    // Find all active patient records assigned to this doctor
+    const patients = await PatientRecord.find({ 
+      doctorId: req.user.userId,
+      status: 'active'
+    })
+      .populate('doctorId', 'name')
+      .sort({ createdAt: -1 });
 
-    // Combine and get unique patient IDs
-    const patientIds = [...new Set([...recordPatients, ...appointmentPatients])];
-
-    // Get patient details
-    const patients = await User.find({ 
-      _id: { $in: patientIds },
-      role: 'patient'
-    }).select('name email createdAt');
-
-    // Get last visit for each patient
-    const patientsWithLastVisit = await Promise.all(
-      patients.map(async (patient) => {
-        const lastRecord = await MedicalRecord.findOne({ 
-          patientId: patient._id,
-          doctorId: req.user.userId 
-        }).sort({ createdAt: -1 });
-
-        return {
-          _id: patient._id,
-          name: patient.name,
-          email: patient.email,
-          age: calculateAge(patient.createdAt), // Placeholder calculation
-          lastVisit: lastRecord ? lastRecord.createdAt : null,
-          recordCount: await MedicalRecord.countDocuments({ 
-            patientId: patient._id,
-            doctorId: req.user.userId 
-          })
-        };
-      })
-    );
+    // Format the response with diagnosis history
+    const formattedPatients = patients.map(patient => ({
+      _id: patient._id,
+      patientName: patient.patientName,
+      age: patient.patientAge,
+      roomNumber: patient.roomNumber,
+      diagnosisHistory: patient.diagnosis,
+      prescription: patient.prescription,
+      notes: patient.notes,
+      status: patient.status,
+      lastCheckup: patient.lastCheckup,
+      createdAt: patient.createdAt
+    }));
 
     res.status(200).json({
       success: true,
-      count: patientsWithLastVisit.length,
-      data: patientsWithLastVisit
+      count: formattedPatients.length,
+      data: formattedPatients
     });
   } catch (error) {
     console.error('Error fetching patients:', error);
@@ -60,44 +43,110 @@ export const getMyPatients = async (req, res) => {
   }
 };
 
-// @desc    Get patient's medical records (for doctor)
-// @route   GET /api/doctor/patients/:patientId/records
+// @desc    Add medical record for a patient
+// @route   POST /api/doctor/add-record
 // @access  Private (Doctor only)
-export const getPatientRecords = async (req, res) => {
+export const addPatientRecord = async (req, res) => {
   try {
-    const { patientId } = req.params;
+    const { patientName, patientAge, roomNumber, diagnosis, prescription, notes } = req.body;
 
-    const records = await MedicalRecord.find({ 
-      patientId,
-      doctorId: req.user.userId 
-    })
-      .populate('patientId', 'name email')
-      .sort({ createdAt: -1 });
+    if (!patientName || !patientAge || !roomNumber || !diagnosis || !prescription) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide all required fields: patientName, patientAge, roomNumber, diagnosis, prescription'
+      });
+    }
 
-    res.status(200).json({
+    // Create new patient record
+    const patientRecord = await PatientRecord.create({
+      patientName,
+      patientAge,
+      roomNumber,
+      doctorId: req.user.userId,
+      diagnosis,
+      prescription,
+      notes: notes || '',
+      status: 'active'
+    });
+
+    res.status(201).json({
       success: true,
-      count: records.length,
-      data: records
+      message: 'Patient record added successfully',
+      data: patientRecord
     });
   } catch (error) {
-    console.error('Error fetching patient records:', error);
+    console.error('Error adding patient record:', error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching patient records',
+      message: 'Error adding patient record',
       error: error.message
     });
   }
 };
 
-// @desc    Add medical record for a patient
-// @route   POST /api/doctor/add-record
+// @desc    Update patient record
+// @route   PUT /api/doctor/patients/:id
 // @access  Private (Doctor only)
-export const addMedicalRecord = async (req, res) => {
+export const updatePatientRecord = async (req, res) => {
   try {
-    const { patientId, diagnosis, prescription, notes } = req.body;
+    const { id } = req.params;
+    const updates = req.body;
 
-    if (!patientId || !diagnosis || !prescription) {
-      return res.status(400).json({
+    // Find patient record and ensure it belongs to this doctor
+    const patientRecord = await PatientRecord.findOne({
+      _id: id,
+      doctorId: req.user.userId
+    });
+
+    if (!patientRecord) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient record not found or you do not have permission to update it'
+      });
+    }
+
+    // Update the record
+    Object.assign(patientRecord, updates);
+    patientRecord.lastCheckup = new Date();
+    await patientRecord.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Patient record updated successfully',
+      data: patientRecord
+    });
+  } catch (error) {
+    console.error('Error updating patient record:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating patient record',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get all patient records (for chat context)
+// @route   GET /api/doctor/all-records
+// @access  Private (Doctor only)
+export const getAllMyPatientRecords = async (req, res) => {
+  try {
+    const records = await PatientRecord.find({ 
+      doctorId: req.user.userId 
+    }).select('patientName patientAge diagnosis prescription notes status roomNumber');
+
+    res.status(200).json({
+      success: true,
+      data: records
+    });
+  } catch (error) {
+    console.error('Error fetching records:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching records',
+      error: error.message
+    });
+  }
+};
         success: false,
         message: 'Please provide patient ID, diagnosis, and prescription'
       });

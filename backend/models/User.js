@@ -29,10 +29,10 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: {
-      values: ['patient', 'doctor', 'admin'],
-      message: 'Role must be either patient, doctor, or admin'
+      values: ['doctor', 'nurse', 'admin'],
+      message: 'Role must be either doctor, nurse, or admin'
     },
-    default: 'patient'
+    default: 'doctor'
   },
   createdAt: {
     type: Date,

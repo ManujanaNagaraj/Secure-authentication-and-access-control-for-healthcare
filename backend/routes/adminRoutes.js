@@ -6,7 +6,9 @@ import {
   getSystemStats,
   getSecurityAlerts,
   getAuditLogs,
-  resolveAlert
+  resolveAlert,
+  getAllPatientRecords,
+  getSystemData
 } from '../controllers/adminController.js';
 import { verifyToken } from '../middleware/verifyToken.js';
 import { authorizeRole } from '../middleware/authorizeRole.js';
@@ -25,5 +27,7 @@ router.get('/stats', getSystemStats);
 router.get('/security-alerts', getSecurityAlerts);
 router.get('/audit-logs', getAuditLogs);
 router.delete('/alerts/:id', resolveAlert);
+router.get('/all-records', getAllPatientRecords);
+router.get('/system-data', getSystemData);
 
 export default router;

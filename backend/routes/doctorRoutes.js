@@ -1,10 +1,9 @@
 import express from 'express';
 import { 
   getMyPatients,
-  getPatientRecords,
-  addMedicalRecord,
-  getMyAppointments,
-  updateAppointmentStatus
+  addPatientRecord,
+  updatePatientRecord,
+  getAllMyPatientRecords
 } from '../controllers/doctorController.js';
 import { verifyToken } from '../middleware/verifyToken.js';
 import { authorizeRole } from '../middleware/authorizeRole.js';
@@ -16,10 +15,9 @@ router.use(verifyToken);
 router.use(authorizeRole('doctor'));
 
 // Doctor routes
-router.get('/my-patients', getMyPatients);
-router.get('/patients/:patientId/records', getPatientRecords);
-router.post('/add-record', addMedicalRecord);
-router.get('/appointments', getMyAppointments);
-router.put('/appointments/:id', updateAppointmentStatus);
+router.get('/patients', getMyPatients);
+router.post('/add-record', addPatientRecord);
+router.put('/patients/:id', updatePatientRecord);
+router.get('/all-records', getAllMyPatientRecords);
 
 export default router;
