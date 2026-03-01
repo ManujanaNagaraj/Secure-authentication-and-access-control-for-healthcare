@@ -27,7 +27,7 @@ const generateToken = (userId, role) => {
 // @access  Public
 export const register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, specialization } = req.body;
 
     // Check MongoDB connection
     const mongoose = await import('mongoose');
@@ -50,6 +50,14 @@ export const register = async (req, res) => {
     const validRoles = ['doctor', 'nurse', 'admin'];
     const userRole = role && validRoles.includes(role.toLowerCase()) ? role.toLowerCase() : 'doctor';
 
+    // Validate specialization for doctors
+    if (userRole === 'doctor' && !specialization) {
+      return res.status(400).json({
+        success: false,
+        message: 'Specialization is required for doctors'
+      });
+    }
+
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -60,12 +68,19 @@ export const register = async (req, res) => {
     }
 
     // Create new user
-    const user = await User.create({
+    const userData = {
       name,
       email,
       password,
       role: userRole
-    });
+    };
+
+    // Add specialization for doctors
+    if (userRole === 'doctor') {
+      userData.specialization = specialization;
+    }
+
+    const user = await User.create(userData);
 
     // Generate token
     const token = generateToken(user._id, user.role);
@@ -78,7 +93,8 @@ export const register = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        specialization: user.specialization
       }
     });
   } catch (error) {
