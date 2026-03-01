@@ -34,6 +34,27 @@ const userSchema = new mongoose.Schema({
     },
     default: 'doctor'
   },
+  specialization: {
+    type: String,
+    enum: {
+      values: [
+        'General Practitioner',
+        'Pediatrician',
+        'Cardiologist',
+        'Surgeon',
+        'Neurologist',
+        'Orthopedic',
+        'Dermatologist',
+        'Psychiatrist',
+        'Gynecologist',
+        'ENT Specialist'
+      ],
+      message: 'Invalid specialization'
+    },
+    required: function() {
+      return this.role === 'doctor';
+    }
+  },
   createdAt: {
     type: Date,
     default: Date.now
