@@ -189,7 +189,7 @@ Provide a comprehensive, data-driven response:`;
     console.log('[chatWithBot] Sending request to Gemini API...');
 
     // Get Gemini model
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     // Generate response
     const result = await model.generateContent(systemPrompt);
