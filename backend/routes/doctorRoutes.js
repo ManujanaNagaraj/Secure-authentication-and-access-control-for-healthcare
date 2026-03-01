@@ -3,6 +3,8 @@ import {
   getMyPatients,
   addPatientRecord,
   updatePatientRecord,
+  deletePatientRecord,
+  getPatientRecord,
   getAllMyPatientRecords
 } from '../controllers/doctorController.js';
 import { verifyToken } from '../middleware/verifyToken.js';
@@ -17,7 +19,9 @@ router.use(authorizeRole('doctor'));
 // Doctor routes
 router.get('/patients', getMyPatients);
 router.post('/add-record', addPatientRecord);
-router.put('/patients/:id', updatePatientRecord);
+router.get('/record/:id', getPatientRecord);
+router.put('/update-record/:id', updatePatientRecord);
+router.delete('/delete-record/:id', deletePatientRecord);
 router.get('/all-records', getAllMyPatientRecords);
 
 export default router;
