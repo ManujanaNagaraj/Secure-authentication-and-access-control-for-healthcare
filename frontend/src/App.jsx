@@ -1,10 +1,10 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
+import DoctorChatBot from './pages/DoctorChatBot';
+import NurseDashboard from './pages/NurseDashboard';
 import AdminDashboard from './pages/AdminDashboard';
-import ChatBot from './pages/ChatBot';
 import Unauthorized from './pages/Unauthorized';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -21,26 +21,26 @@ function App() {
 
           {/* Protected Routes */}
           <Route
-            path="/dashboard/patient"
-            element={
-              <ProtectedRoute allowedRoles={['patient']}>
-                <PatientDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/patient/chat"
-            element={
-              <ProtectedRoute allowedRoles={['patient']}>
-                <ChatBot />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/dashboard/doctor"
             element={
               <ProtectedRoute allowedRoles={['doctor']}>
                 <DoctorDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/doctor/chat"
+            element={
+              <ProtectedRoute allowedRoles={['doctor']}>
+                <DoctorChatBot />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/nurse"
+            element={
+              <ProtectedRoute allowedRoles={['nurse']}>
+                <NurseDashboard />
               </ProtectedRoute>
             }
           />

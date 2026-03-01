@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 
-const Sidebar = ({ role, userName }) => {
+const Sidebar = ({ role, userName, onTabChange }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -20,15 +20,16 @@ const Sidebar = ({ role, userName }) => {
     ],
     doctor: [
       { name: 'Dashboard', icon: '📊', path: '/dashboard/doctor' },
+      { name: 'Chat with DocBot', icon: '🤖', path: '/dashboard/doctor/chat' },
       { name: 'My Patients', icon: '👥', active: true },
       { name: 'Appointments', icon: '📅', active: true },
       { name: 'Add Record', icon: '➕', active: true },
     ],
     admin: [
-      { name: 'Dashboard', icon: '📊', path: '/dashboard/admin' },
-      { name: 'Users', icon: '👥', active: true },
-      { name: 'Statistics', icon: '📈', active: true },
-      { name: 'Security', icon: '🔒', active: true },
+      { name: 'Dashboard', icon: '📊', tab: 'overview' },
+      { name: 'Users', icon: '👥', tab: 'users' },
+      { name: 'Statistics', icon: '📈', tab: 'statistics' },
+      { name: 'Security', icon: '🔒', tab: 'security' },
     ],
   };
 
@@ -59,7 +60,13 @@ const Sidebar = ({ role, userName }) => {
           {menuItems[role]?.map((item, index) => (
             <li key={index}>
               <button
-                onClick={() => item.path && navigate(item.path)}
+                onClick={() => {
+                  if (item.path) {
+                    navigate(item.path);
+                  } else if (item.tab && onTabChange) {
+                    onTabChange(item.tab);
+                  }
+                }}
                 className="w-full text-left px-4 py-3 rounded-lg hover:bg-primary-600 transition-colors flex items-center space-x-3"
               >
                 <span className="text-xl">{item.icon}</span>

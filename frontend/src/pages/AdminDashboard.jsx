@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Sidebar from '../components/Sidebar';
+import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -15,10 +16,11 @@ const AdminDashboard = () => {
   });
   const [securityAlerts, setSecurityAlerts] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
-  const [activeTab, setActiveTab] = useState('overview'); // overview, alerts, logs, users
+  const [activeTab, setActiveTab] = useState('overview'); // overview, alerts, logs, users, statistics, security
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showFlaggedOnly, setShowFlaggedOnly] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -191,7 +193,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <Sidebar role="admin" userName={user?.name || 'Admin'} />
+      <Sidebar role="admin" userName={user?.name || 'Admin'} onTabChange={setActiveTab} />
       
       {/* Main Content */}
       <div className="ml-64 flex-1 p-8">
@@ -260,6 +262,26 @@ const AdminDashboard = () => {
               }`}
             >
               👥 User Management
+            </button>
+            <button
+              onClick={() => setActiveTab('statistics')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'statistics'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              📈 Statistics
+            </button>
+            <button
+              onClick={() => setActiveTab('security')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'security'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              🔒 Security
             </button>
           </nav>
         </div>
@@ -601,6 +623,187 @@ const AdminDashboard = () => {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Statistics Tab */}
+        {activeTab === 'statistics' && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">📈 Statistics & Analytics</h2>
+            
+            {/* User Distribution Pie Chart */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">User Distribution by Role</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Patients', value: stats.totalPatients, color: '#3B82F6' },
+                      { name: 'Doctors', value: stats.totalDoctors, color: '#10B981' },
+                      { name: 'Admins', value: stats.totalAdmins, color: '#EF4444' }
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {[
+                      { name: 'Patients', value: stats.totalPatients, color: '#3B82F6' },
+                      { name: 'Doctors', value: stats.totalDoctors, color: '#10B981' },
+                      { name: 'Admins', value: stats.totalAdmins, color: '#EF4444' }
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* User Growth Over Time */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">User Growth Over Time</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart
+                  data={(() => {
+                    // Group users by date
+                    const usersByDate = {};
+                    users.forEach(u => {
+                      const date = new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      usersByDate[date] = (usersByDate[date] || 0) + 1;
+                    });
+                    
+                    // Convert to cumulative data
+                    let cumulative = 0;
+                    return Object.entries(usersByDate)
+                      .sort((a, b) => new Date(a[0]) - new Date(b[0]))
+                      .map(([date, count]) => {
+                        cumulative += count;
+                        return { date, users: cumulative };
+                      });
+                  })()}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="users" stroke="#3B82F6" strokeWidth={2} name="Total Users" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Security Alerts Over Time */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">Security Alerts Over Time</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart
+                  data={(() => {
+                    // Group alerts by date
+                    const alertsByDate = {};
+                    securityAlerts.forEach(alert => {
+                      const date = new Date(alert.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      alertsByDate[date] = (alertsByDate[date] || 0) + 1;
+                    });
+                    
+                    return Object.entries(alertsByDate)
+                      .sort((a, b) => new Date(a[0]) - new Date(b[0]))
+                      .map(([date, count]) => ({ date, alerts: count }));
+                  })()}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="alerts" stroke="#EF4444" strokeWidth={2} name="Security Alerts" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* Security Tab */}
+        {activeTab === 'security' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">🔒 Security Audit Logs</h2>
+              <div className="flex items-center space-x-3">
+                <label className="flex items-center space-x-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={showFlaggedOnly}
+                    onChange={(e) => setShowFlaggedOnly(e.target.checked)}
+                    className="form-checkbox h-4 w-4 text-primary-600 rounded"
+                  />
+                  <span className="text-gray-700 font-medium">Show Flagged Only</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-semibold mb-4 text-primary-700">📋 All Audit Logs</h3>
+              {auditLogs.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No audit logs found</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP Address</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Flagged</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {auditLogs
+                        .filter(log => !showFlaggedOnly || log.flagged)
+                        .map((log) => (
+                          <tr key={log._id} className={log.flagged ? 'bg-red-50' : 'hover:bg-gray-50'}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {log.userName}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 py-1 text-xs rounded-full ${getRoleBadgeColor(log.role)}`}>
+                                {log.role}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {log.action}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {log.ipAddress}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {formatDate(log.timestamp)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {log.flagged ? (
+                                <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
+                                  🚨 YES
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                                  ✓ NO
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

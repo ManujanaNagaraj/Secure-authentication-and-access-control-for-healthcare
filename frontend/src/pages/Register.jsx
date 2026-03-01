@@ -9,7 +9,8 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'patient',
+    role: 'doctor',
+    specialization: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,6 +38,13 @@ const Register = () => {
     // Validate password length
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters long');
+      setLoading(false);
+      return;
+    }
+
+    // Validate specialization for doctors
+    if (formData.role === 'doctor' && !formData.specialization) {
+      setError('Please select a specialization for doctor role');
       setLoading(false);
       return;
     }
@@ -128,11 +136,39 @@ const Register = () => {
                 value={formData.role}
                 onChange={handleChange}
               >
-                <option value="patient">Patient</option>
                 <option value="doctor">Doctor</option>
+                <option value="nurse">Nurse</option>
                 <option value="admin">Admin</option>
               </select>
             </div>
+
+            {formData.role === 'doctor' && (
+              <div>
+                <label htmlFor="specialization" className="block text-sm font-medium text-gray-700">
+                  Specialization
+                </label>
+                <select
+                  id="specialization"
+                  name="specialization"
+                  required
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  value={formData.specialization}
+                  onChange={handleChange}
+                >
+                  <option value="">Select Specialization</option>
+                  <option value="General Practitioner">General Practitioner</option>
+                  <option value="Pediatrician">Pediatrician</option>
+                  <option value="Cardiologist">Cardiologist</option>
+                  <option value="Surgeon">Surgeon</option>
+                  <option value="Neurologist">Neurologist</option>
+                  <option value="Orthopedic">Orthopedic</option>
+                  <option value="Dermatologist">Dermatologist</option>
+                  <option value="Psychiatrist">Psychiatrist</option>
+                  <option value="Gynecologist">Gynecologist</option>
+                  <option value="ENT Specialist">ENT Specialist</option>
+                </select>
+              </div>
+            )}
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
