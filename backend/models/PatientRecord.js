@@ -22,6 +22,21 @@ const patientRecordSchema = new mongoose.Schema({
     ref: 'User',
     required: [true, 'Doctor ID is required']
   },
+  assignedDoctorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'Assigned Doctor ID is required']
+  },
+  assignedDoctorName: {
+    type: String,
+    required: [true, 'Assigned Doctor Name is required'],
+    trim: true
+  },
+  department: {
+    type: String,
+    required: [true, 'Department is required'],
+    trim: true
+  },
   diagnosis: {
     type: String,
     required: [true, 'Diagnosis is required'],
@@ -57,6 +72,8 @@ const patientRecordSchema = new mongoose.Schema({
 
 // Index for faster queries
 patientRecordSchema.index({ doctorId: 1, status: 1 });
+patientRecordSchema.index({ assignedDoctorId: 1, department: 1 });
+patientRecordSchema.index({ department: 1, status: 1 });
 patientRecordSchema.index({ status: 1 });
 patientRecordSchema.index({ roomNumber: 1 });
 
