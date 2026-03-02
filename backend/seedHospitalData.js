@@ -11,7 +11,8 @@ const seedData = async () => {
     console.log('🌱 Starting database seeding...');
 
     // Connect to MongoDB
-    await mongoose.connect(process.env.MONGO_URI);
+    const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/healthcare';
+    await mongoose.connect(mongoURI);
     console.log('✅ Connected to MongoDB');
 
     // Clear existing data

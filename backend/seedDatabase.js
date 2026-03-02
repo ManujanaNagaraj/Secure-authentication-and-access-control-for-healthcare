@@ -26,7 +26,9 @@ const sampleUsers = {
 // Connect to MongoDB
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    // Try MongoDB Atlas first if MONGO_URI is set, otherwise use local
+    const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/healthcare';
+    await mongoose.connect(mongoURI);
     console.log('MongoDB Connected for seeding');
   } catch (error) {
     console.error('Error connecting to MongoDB:', error.message);
